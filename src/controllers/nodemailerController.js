@@ -59,7 +59,7 @@ function sendPaymentSuccessMail(req, res) {
   const mailOptions2 = {
     from: "Epic Games Store",
     to: `${email}`,
-    subject: "enviado desde Epic Games Store.",
+    subject: "Compraste en Epic Games Store.",
     text: "¡Pago exitoso!",
     html: htmlContent2,
   };
