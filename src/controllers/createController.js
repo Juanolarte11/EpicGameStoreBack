@@ -1,8 +1,67 @@
-const { Videogame, Genre, Platform, Developers } = require("../db.js");
-const getVideogamesApi = require("./getVideogamesApi.js")
-const findAllGenres = require("./findAllGenres.js");
-const getPlatforms = require("./getPlatforms.js");
-const getDevelopers = require("./getDevelopers.js");
+require('dotenv').config();
+const { Videogame, Genre, Platform, Developers, Stat } = require("../db.js");
+const { getVideogamesApi } = require('./apiController.js')
+const { findAllGenres } = require("../controllers/genresController.js");
+const { getDevelopers } = require ('./developerController.js')
+
+const createdGame = async (name, description, launchDate, rating, image, screenshots, price, stock , genres, platforms, developer) => {
+    try {
+        const screenshotsString = screenshots.join(',');
+        const newVideogame = await Videogame.create({
+            name,
+            description,
+            launchDate,
+            rating,
+            image,
+            screenshots: screenshotsString,
+            price,
+            stock,
+        });
+
+        const developerDb = await Developers.findOne({
+            where: { name: developer },
+          });
+          
+          if (developerDb) {
+            // Developer with the given name exists in the database
+            await developerDb.update({
+                games: [...developerDb.games, newVideogame.id],
+            });
+          } else {
+            // Developer with the given name does not exist in the database
+            const newDev = await Developers.create({
+                name: developer,
+                games: [newVideogame.id],
+            });
+            await newVideogame.setDeveloper(newDev.id);
+          }
+
+          for (const name of genres) {
+            const genre = await Genre.findOne({
+                where: { genreName: name },
+              });
+            if (genre) {
+                console.log("in use");
+                await newVideogame.addGenre(genre);
+            } 
+        };
+
+        for (const name of platforms) {
+            const platform = await Platform.findOne({
+                where: { platformName: name },
+              });
+            if (platform) {
+                await newVideogame.addPlatform(platform);
+            }
+        };
+
+        return newVideogame;
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+
 
 const addGenresToVideogame = async (videogameId, genreNames) => {
   try {
@@ -63,16 +122,25 @@ const addDeveloper = async (apiId) => {
         condition = false; // Exit the loop if a match is found
       }else{
         await getDevelopers();
-      }
-    }
-    
+      };
+    };
     
   } catch (error) {
-    // Handle any errors that might occur during the loop
+    throw new Error('Failed to add developers to the videogame');
+  };
+};
+
+const addStatToVideogame = async (apiId) => {
+  try {
+    const stat = await Stat.create();
+    const game = await Videogame.findOne({
+      where: { apiId: apiId }
+    });
+    await game.setStat(stat);
+  } catch (error) {
+    throw new Error('Failed to add stats to the videogame');
   }
-}
-
-
+};
 
 const createVideogame = async () => {
   try {
@@ -89,11 +157,11 @@ const createVideogame = async () => {
       await addDeveloper(apiId);
       await addPlatformsToVideogame(apiId, platforms);
       await addGenresToVideogame(apiId, genres);
+      await addStatToVideogame(apiId);
     }
 
-
     const videogames = await Videogame.findAll({
-      attributes: ['id', 'name', 'description', 'launchDate', 'rating', 'image', 'screenshots', 'price', 'stock', 'active'],
+      attributes: ['id', 'name', 'description', 'launchDate', 'rating', 'image', 'screenshots', 'price', 'stock', 'status'],
       include: [
         {
           model: Genre,
@@ -133,16 +201,12 @@ const createVideogame = async () => {
       })),
       developer: videogame.Developer
     }));
-
-
     return modifiedResponse;
-    
-    
 
   } catch (error) {
-    
+       
   }
+
 };
 
-module.exports = createVideogame;
-
+module.exports = { createdGame, createVideogame }; 

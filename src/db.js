@@ -33,7 +33,7 @@ sequelize.models = Object.fromEntries(capsEntries);
 
 // En sequelize.models están todos los modelos importados como propiedades
 // Para relacionarlos hacemos un destructuring
-const { Videogame, Genre, Platform, Developers, Users, Carrito } = sequelize.models;
+const { Videogame, Genre, Platform, Developers, Users, Carrito, Review, Stat } = sequelize.models;
 
 // Aca vendrian las relaciones
 
@@ -43,8 +43,8 @@ Genre.belongsToMany(Videogame, { through: "VideogameGenre" });
 Videogame.belongsToMany(Platform, {through: "VideogamePlatform"});
 Platform.belongsToMany(Videogame, {through: "VideogamePlatform"});
 
-Users.belongsToMany(Videogame, {through: "UsersWishList"});
-Videogame.belongsToMany(Users, {through: "UsersWishList"});
+Users.belongsToMany(Videogame, {through: "Favoritos"});
+Videogame.belongsToMany(Users, {through: "Favoritos"});
 
 // Users.belongsToMany(Videogame, {through: "UserShop"});
 // Videogame.belongsToMany(Users, {through: "UserShop"});
@@ -52,14 +52,23 @@ Videogame.belongsToMany(Users, {through: "UsersWishList"});
 Developers.hasMany(Videogame);
 Videogame.belongsTo(Developers);
 
-Users.hasOne(Carrito);
+Users.hasMany(Carrito); 
 Carrito.belongsTo(Users);
 
 Videogame.belongsToMany(Carrito, {through: "VideogameCarrito"});
 Carrito.belongsToMany(Videogame, {through: "VideogameCarrito"});
 
+Users.hasMany(Videogame, { foreignKey: 'userId', as: 'videogames' });
+Videogame.belongsTo(Users, { foreignKey: 'userId', as: 'seller' });
 
+Review.belongsToMany(Users, { through: "ReviewUsers" });
+Users.belongsToMany(Review, { through: "ReviewUsers" });
 
+Review.belongsToMany(Videogame, { through: "ReviewVideogame" });
+Videogame.belongsToMany(Review, { through: "ReviewVideogame" });
+
+Videogame.hasOne(Stat, { foreignKey: 'videogameId' });
+Stat.belongsTo(Videogame, { foreignKey: 'videogameId' });
 
 module.exports = {
   ...sequelize.models, // para poder importar los modelos así: const { Product, User } = require('./db.js');
