@@ -5,6 +5,6 @@ const payRouter = Router();
 payRouter.post("/", getPay)
 payRouter.post("/create_preference", postPay)
 payRouter.get("/feedback", getFeedPay)
-payRouter.get("/succesfulPurchase/:id", managePay)  
+payRouter.post("/succesfulPurchase/:id", managePay)  
 module.exports = payRouter;
 
